@@ -90,8 +90,8 @@ export const fetchRawMaterials = async (): Promise<RawMaterial[]> => {
     category: rm.category,
     unitCost: rm.cost, // DB has 'cost', frontend has 'unitCost'
     unit: rm.unit,
-    stock: rm.initialStock, // DB has 'initialStock', frontend has 'stock'
-    totalCost: rm.cost * rm.initialStock
+    stock: rm.initial_stock || 0, // DB has 'initial_stock', frontend has 'stock'
+    totalCost: rm.cost * (rm.initial_stock || 0)
   }));
 };
 
@@ -101,7 +101,7 @@ export const createRawMaterial = async (material: RawMaterial): Promise<RawMater
     category: material.category,
     cost: material.unitCost,
     unit: material.unit,
-    initialStock: material.stock
+    initial_stock: material.stock
   };
   const { data, error } = await supabase.from('raw_materials').insert([dbRm]).select().single();
   if (error) {
@@ -114,8 +114,8 @@ export const createRawMaterial = async (material: RawMaterial): Promise<RawMater
     category: data.category,
     unitCost: data.cost,
     unit: data.unit,
-    stock: data.initialStock,
-    totalCost: data.cost * data.initialStock
+    stock: data.initial_stock,
+    totalCost: data.cost * data.initial_stock
   };
 };
 
@@ -125,7 +125,7 @@ export const updateRawMaterial = async (material: RawMaterial): Promise<RawMater
     category: material.category,
     cost: material.unitCost,
     unit: material.unit,
-    initialStock: material.stock
+    initial_stock: material.stock
   };
   const { data, error } = await supabase.from('raw_materials').update(dbRm).eq('id', material.id).select().single();
   if (error) {
@@ -138,8 +138,8 @@ export const updateRawMaterial = async (material: RawMaterial): Promise<RawMater
     category: data.category,
     unitCost: data.cost,
     unit: data.unit,
-    stock: data.initialStock,
-    totalCost: data.cost * data.initialStock
+    stock: data.initial_stock,
+    totalCost: data.cost * data.initial_stock
   };
 };
 

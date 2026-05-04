@@ -149,7 +149,7 @@ export function ProductCatalog({
               <h3 className="text-2xl font-black text-primary tracking-tighter">Catálogo de Productos Terminados</h3>
               <div className="bg-primary/5 px-6 py-3 rounded-2xl border border-primary/10 text-right">
                 <span className="text-[10px] font-black uppercase tracking-[0.2em] text-primary/60 block mb-1">Costo Total Productos Terminados</span>
-                <span className="text-xl font-black text-primary">${totalFinishedGoodsCost.toLocaleString('es-CO')} COP</span>
+                <span className="text-xl font-black text-primary">${(totalFinishedGoodsCost || 0).toLocaleString('es-CO')} COP</span>
               </div>
             </div>
             
@@ -213,8 +213,8 @@ export function ProductCatalog({
                             {stock} und
                           </span>
                         </td>
-                        <td className="py-4 font-bold text-primary">{showCosts ? `$${product.cost.toLocaleString('es-CO')}` : '****'}</td>
-                        <td className="py-4 font-bold text-primary">${product.price.toLocaleString('es-CO')}</td>
+                        <td className="py-4 font-bold text-primary">{showCosts ? `$${(product.cost || 0).toLocaleString('es-CO')}` : '****'}</td>
+                        <td className="py-4 font-bold text-primary">${(product.price || 0).toLocaleString('es-CO')}</td>
                         <td className="py-4 text-right">
                           <button onClick={() => onEditProduct(product.id)} className="p-2 text-tertiary hover:text-primary transition-colors" title="Editar"><Edit2 className="w-4 h-4" /></button>
                           <button onClick={() => handleDelete(product.id)} className="p-2 text-tertiary hover:text-error transition-colors" title="Eliminar"><Trash2 className="w-4 h-4" /></button>
@@ -234,7 +234,7 @@ export function ProductCatalog({
               <h3 className="text-2xl font-black text-primary tracking-tighter">Directorio de Materias Primas</h3>
               <div className="bg-primary/5 px-6 py-3 rounded-2xl border border-primary/10 text-right">
                 <span className="text-[10px] font-black uppercase tracking-[0.2em] text-primary/60 block mb-1">Costo Total Materias Primas</span>
-                <span className="text-xl font-black text-primary">${totalRawMaterialsCost.toLocaleString('es-CO')} COP</span>
+                <span className="text-xl font-black text-primary">${(totalRawMaterialsCost || 0).toLocaleString('es-CO')} COP</span>
               </div>
             </div>
             <div className="overflow-x-auto">
@@ -264,8 +264,8 @@ export function ProductCatalog({
                           </td>
                           <td className="py-6 font-black text-primary">{stock}</td>
                           <td className="py-6 text-tertiary">{rm.unit}</td>
-                          <td className="py-6 font-bold">${rm.unitCost.toLocaleString('es-CO')}</td>
-                          <td className="py-6 font-black text-primary">${(stock * rm.unitCost).toLocaleString('es-CO')}</td>
+                          <td className="py-6 font-bold">${(rm.unitCost || 0).toLocaleString('es-CO')}</td>
+                          <td className="py-6 font-black text-primary">${((stock || 0) * (rm.unitCost || 0)).toLocaleString('es-CO')}</td>
                           <td className="py-6 text-right">
                             <div className="flex justify-end gap-2">
                               <button onClick={() => { setEditingRawMaterial(rm); setShowRawMaterialModal(true); }} title="Editar" className="w-8 h-8 rounded-lg bg-surface-dim flex items-center justify-center text-primary hover:bg-surface"><Edit2 className="w-4 h-4" /></button>
@@ -288,7 +288,7 @@ export function ProductCatalog({
               <h3 className="text-2xl font-black text-primary tracking-tighter">Historial de Movimientos</h3>
               <div className="bg-primary/5 px-6 py-3 rounded-2xl border border-primary/10 text-right">
                 <span className="text-[10px] font-black uppercase tracking-[0.2em] text-primary/60 block mb-1">Valor Total del Inventario</span>
-                <span className="text-xl font-black text-primary">${globalInventoryCost.toLocaleString('es-CO')} COP</span>
+                <span className="text-xl font-black text-primary">${(globalInventoryCost || 0).toLocaleString('es-CO')} COP</span>
               </div>
             </div>
             <div className="overflow-x-auto">
