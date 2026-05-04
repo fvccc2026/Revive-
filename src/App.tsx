@@ -47,38 +47,57 @@ const initialProducts: Product[] = [
 
 export default function App() {
   const [page, setPage] = useState<Page>('inventario');
-  const [products, setProducts] = useState<Product[]>(() => {
-    const saved = localStorage.getItem('revive_products');
-    return saved ? JSON.parse(saved) : initialProducts;
-  });
-  const [orders, setOrders] = useState<Order[]>(() => {
-    const saved = localStorage.getItem('revive_orders');
-    return saved ? JSON.parse(saved) : [];
-  });
-  const [movements, setMovements] = useState<InventoryMovement[]>(() => {
-    const saved = localStorage.getItem('revive_movements');
-    return saved ? JSON.parse(saved) : [];
-  });
-  const [rawMaterials, setRawMaterials] = useState<RawMaterial[]>(() => {
-    const saved = localStorage.getItem('revive_rawMaterials');
-    return saved ? JSON.parse(saved) : [];
-  });
+  const [products, setProducts] = useState<Product[]>([]);
+  const [orders, setOrders] = useState<Order[]>([]);
+  const [movements, setMovements] = useState<InventoryMovement[]>([]);
+  const [rawMaterials, setRawMaterials] = useState<RawMaterial[]>([]);
   
   useEffect(() => {
-    localStorage.setItem('revive_products', JSON.stringify(products));
-  }, [products]);
+    import('./lib/api').then(async api => {
+      const dbProducts = await api.fetchProducts();
+      const dbOrders = await api.fetchOrders();
+      const dbMovements = await api.fetchMovements();
+      const dbRawMaterials = await api.fetchRawMaterials();
 
-  useEffect(() => {
-    localStorage.setItem('revive_orders', JSON.stringify(orders));
-  }, [orders]);
+      // Migrate from localStorage if Supabase is empty
+      const localProducts = JSON.parse(localStorage.getItem('revive_products') || '[]');
+      const localOrders = JSON.parse(localStorage.getItem('revive_orders') || '[]');
+      const localMovements = JSON.parse(localStorage.getItem('revive_movements') || '[]');
+      const localRawMaterials = JSON.parse(localStorage.getItem('revive_rawMaterials') || '[]');
 
-  useEffect(() => {
-    localStorage.setItem('revive_movements', JSON.stringify(movements));
-  }, [movements]);
+      let migrated = false;
 
-  useEffect(() => {
-    localStorage.setItem('revive_rawMaterials', JSON.stringify(rawMaterials));
-  }, [rawMaterials]);
+      if (dbProducts.length === 0 && localProducts.length > 0) {
+        for (const p of localProducts) await api.createProduct(p);
+        migrated = true;
+      }
+      if (dbOrders.length === 0 && localOrders.length > 0) {
+        for (const o of localOrders) await api.createOrder(o);
+        migrated = true;
+      }
+      if (dbMovements.length === 0 && localMovements.length > 0) {
+        await api.createMovementsBatch(localMovements);
+        migrated = true;
+      }
+      if (dbRawMaterials.length === 0 && localRawMaterials.length > 0) {
+        for (const rm of localRawMaterials) await api.createRawMaterial(rm);
+        migrated = true;
+      }
+
+      if (migrated) {
+        // Refetch after migration
+        setProducts(await api.fetchProducts());
+        setOrders(await api.fetchOrders());
+        setMovements(await api.fetchMovements());
+        setRawMaterials(await api.fetchRawMaterials());
+      } else {
+        setProducts(dbProducts.length > 0 ? dbProducts : initialProducts);
+        setOrders(dbOrders);
+        setMovements(dbMovements);
+        setRawMaterials(dbRawMaterials);
+      }
+    });
+  }, []);
   const [editingProductId, setEditingProductId] = useState<number | null>(null);
 
   const handleEditProduct = (id: number | null) => {
@@ -86,11 +105,16 @@ export default function App() {
     setPage('costeo');
   };
 
-  const handleSaveProduct = (product: Product) => {
+  const handleSaveProduct = async (product: Product) => {
+    const api = await import('./lib/api');
     if (editingProductId) {
+      await api.updateProduct(product);
       setProducts(products.map(p => p.id === product.id ? product : p));
     } else {
-      setProducts([...products, product]);
+      const { id, ...prodWithoutId } = product;
+      const newProd = await api.createProduct(prodWithoutId as any); // Let DB generate ID
+      if (newProd) setProducts([...products, newProd]);
+      else setProducts([...products, product]);
     }
     setPage('inventario');
     setEditingProductId(null);
@@ -101,7 +125,9 @@ export default function App() {
     setEditingProductId(null);
   };
 
-  const handleDeleteProduct = (id: number) => {
+  const handleDeleteProduct = async (id: number) => {
+    const api = await import('./lib/api');
+    await api.deleteProduct(id);
     setProducts(products.filter(p => p.id !== id));
   };
 
@@ -125,7 +151,7 @@ export default function App() {
       {page === 'pedidos' && <OrderManagement products={products} orders={orders} setOrders={setOrders} movements={movements} setMovements={setMovements} />}
       {page === 'clientes' && <CustomerManagement orders={orders} />}
       {page === 'campanas' && <CampaignManagement onOpenGallery={() => setPage('medios')} />}
-      {page === 'medios' && <MediaGallery />}
+      {page === 'medios' && <MediaGallery products={products} />}
       {page === 'costeo' && (
         <ProductCostingForm 
           product={currentProduct}

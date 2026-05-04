@@ -54,14 +54,18 @@ export function ProductCatalog({
     }
   };
 
-  const handleDeleteRawMaterial = (id: number) => {
+  const handleDeleteRawMaterial = async (id: number) => {
     if (window.confirm('¿Estás seguro de que deseas eliminar esta materia prima/empaque?')) {
+      const api = await import('../lib/api');
+      await api.deleteRawMaterial(id.toString());
       setRawMaterials(rawMaterials.filter(rm => rm.id !== id));
     }
   };
 
-  const handleDeleteMovement = (id: string) => {
+  const handleDeleteMovement = async (id: string) => {
     if (window.confirm('¿Estás seguro de que deseas eliminar este movimiento?')) {
+      const api = await import('../lib/api');
+      await api.deleteMovement(id);
       setMovements(movements.filter(m => m.id !== id));
     }
   };
@@ -140,15 +144,16 @@ export function ProductCatalog({
 
       <div className="pt-36 px-12 pb-12">
         {activeTab === 'FINISHED' && (
-          <>
+          <div className="bg-surface rounded-[40px] p-12 border border-outline/5 shadow-sm">
             <div className="flex justify-between items-center mb-8">
-              <h3 className="text-2xl font-black text-primary tracking-tighter">Catálogo de Productos</h3>
+              <h3 className="text-2xl font-black text-primary tracking-tighter">Catálogo de Productos Terminados</h3>
               <div className="bg-primary/5 px-6 py-3 rounded-2xl border border-primary/10 text-right">
                 <span className="text-[10px] font-black uppercase tracking-[0.2em] text-primary/60 block mb-1">Costo Total Productos Terminados</span>
                 <span className="text-xl font-black text-primary">${totalFinishedGoodsCost.toLocaleString('es-CO')} COP</span>
               </div>
             </div>
-            <div className="flex flex-col md:flex-row gap-8 mb-16 items-end">
+            
+            <div className="flex flex-col md:flex-row gap-8 mb-12 items-end">
               <div className="flex-1">
                 <label id="search-label" className="block text-[10px] font-black uppercase tracking-[0.2em] text-tertiary mb-3 ml-1">Buscar Producto</label>
                 <div className="relative group">
@@ -160,7 +165,7 @@ export function ProductCatalog({
                     placeholder="Nombre, SKU..." 
                     value={search}
                     onChange={(e) => setSearch(e.target.value)}
-                    className="w-full pl-14 pr-6 py-4.5 bg-surface border border-outline/10 rounded-2xl focus:ring-4 focus:ring-primary/5 focus:border-primary/20 transition-all outline-none text-primary font-bold shadow-sm" 
+                    className="w-full pl-14 pr-6 py-4 bg-background border border-outline/10 rounded-2xl focus:ring-4 focus:ring-primary/5 focus:border-primary/20 transition-all outline-none text-primary font-bold shadow-sm" 
                   />
                 </div>
               </div>
@@ -171,7 +176,7 @@ export function ProductCatalog({
                   aria-labelledby="category-label"
                   value={selectedCategory}
                   onChange={(e) => setSelectedCategory(e.target.value)}
-                  className="w-full px-6 py-4.5 bg-surface border border-outline/10 rounded-2xl outline-none focus:ring-4 focus:ring-primary/5 focus:border-primary/20 transition-all text-primary font-bold appearance-none shadow-sm cursor-pointer"
+                  className="w-full px-6 py-4 bg-background border border-outline/10 rounded-2xl outline-none focus:ring-4 focus:ring-primary/5 focus:border-primary/20 transition-all text-primary font-bold appearance-none shadow-sm cursor-pointer"
                 >
                   {categories.map((cat, idx) => (
                     <option key={idx} value={cat}>{cat}</option>
@@ -180,50 +185,47 @@ export function ProductCatalog({
               </div>
             </div>
 
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-12">
-              {filteredProducts.map(product => {
-                const stock = getProductStock(product.id, 'FINISHED', product.initialStock || 0);
-                return (
-                  <div key={product.id} className="group relative bg-surface border border-outline/5 rounded-[32px] overflow-hidden shadow-sm hover:shadow-2xl transition-all duration-700 hover:-translate-y-2">
-                    <div className="h-64 overflow-hidden relative bg-secondary/5">
-                      <img src={product.image} alt={product.name} className="w-full h-full object-cover transition-transform duration-1000 group-hover:scale-110" />
-                      <div className="absolute top-6 left-6">
-                        <span className="bg-white/80 text-primary text-[10px] font-black uppercase tracking-[0.2em] px-5 py-2 rounded-xl backdrop-blur-xl border border-white/20 shadow-xl">{product.category}</span>
-                      </div>
-                      <div className="absolute top-6 right-6 flex gap-2 opacity-0 group-hover:opacity-100 transition-opacity duration-300">
-                        <button onClick={() => onEditProduct(product.id)} title="Editar" aria-label="Editar" className="w-10 h-10 bg-white/90 rounded-xl flex items-center justify-center shadow-lg hover:bg-white text-primary transition-colors"><Edit2 className="w-4 h-4" /></button>
-                        <button onClick={() => handleDelete(product.id)} title="Eliminar" aria-label="Eliminar" className="w-10 h-10 bg-error/90 rounded-xl flex items-center justify-center shadow-lg hover:bg-error text-white transition-colors"><Trash2 className="w-4 h-4" /></button>
-                      </div>
-                    </div>
-                    <div className="p-10">
-                      <div className="flex justify-between items-start mb-8">
-                        <div>
-                          <h3 className="font-black text-2xl text-primary mb-1 tracking-tighter flex items-center gap-3">
-                            {product.name}
-                            <div className={`px-3 py-1 rounded-xl flex items-center gap-1.5 text-xs border ${stock <= 10 ? 'bg-error/10 border-error/20 text-error' : 'bg-surface-dim border-outline/10 text-primary'}`}>
-                              <Package className="w-3 h-3" />
-                              <span className="font-black">{stock} und</span>
-                            </div>
-                          </h3>
-                          <p className="text-tertiary text-[10px] font-black uppercase tracking-widest">SKU: {product.sku}</p>
-                        </div>
-                      </div>
-                      <div className="grid grid-cols-2 gap-5">
-                        <div className="bg-background p-6 rounded-3xl border border-outline/5">
-                          <span className="text-[9px] font-black uppercase tracking-widest text-tertiary block mb-2">Costo Calc.</span>
-                          <span className="text-xl font-black text-primary">{showCosts ? `$${product.cost.toLocaleString('es-CO')}` : '****'}</span>
-                        </div>
-                        <div className="bg-background p-6 rounded-3xl border border-outline/5">
-                          <span className="text-[9px] font-black uppercase tracking-widest text-tertiary block mb-2">Precio Sug.</span>
-                          <span className="text-xl font-black text-primary">${product.price.toLocaleString('es-CO')}</span>
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-                );
-              })}
+            <div className="overflow-x-auto">
+              <table className="w-full">
+                <thead>
+                  <tr className="border-b border-outline/10">
+                    <th className="text-left py-4 text-[10px] font-black uppercase tracking-widest text-tertiary">Nombre</th>
+                    <th className="text-left py-4 text-[10px] font-black uppercase tracking-widest text-tertiary">SKU</th>
+                    <th className="text-left py-4 text-[10px] font-black uppercase tracking-widest text-tertiary">Categoría</th>
+                    <th className="text-left py-4 text-[10px] font-black uppercase tracking-widest text-tertiary">Stock</th>
+                    <th className="text-left py-4 text-[10px] font-black uppercase tracking-widest text-tertiary">Costo Unit.</th>
+                    <th className="text-left py-4 text-[10px] font-black uppercase tracking-widest text-tertiary">Precio Sug.</th>
+                    <th className="text-right py-4 text-[10px] font-black uppercase tracking-widest text-tertiary">Acciones</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {filteredProducts.map(product => {
+                    const stock = getProductStock(product.id, 'FINISHED', product.initialStock || 0);
+                    return (
+                      <tr key={product.id} className="border-b border-outline/5 hover:bg-surface-dim/50 transition-colors">
+                        <td className="py-4 font-bold text-primary">{product.name}</td>
+                        <td className="py-4 text-tertiary text-sm">{product.sku}</td>
+                        <td className="py-4">
+                          <span className="bg-surface-dim px-3 py-1 rounded-lg text-[10px] font-black uppercase tracking-widest text-secondary">{product.category}</span>
+                        </td>
+                        <td className="py-4">
+                          <span className={`px-3 py-1 rounded-lg text-[10px] font-black uppercase tracking-widest ${stock <= 10 ? 'bg-error/10 text-error' : 'bg-success/10 text-success'}`}>
+                            {stock} und
+                          </span>
+                        </td>
+                        <td className="py-4 font-bold text-primary">{showCosts ? `$${product.cost.toLocaleString('es-CO')}` : '****'}</td>
+                        <td className="py-4 font-bold text-primary">${product.price.toLocaleString('es-CO')}</td>
+                        <td className="py-4 text-right">
+                          <button onClick={() => onEditProduct(product.id)} className="p-2 text-tertiary hover:text-primary transition-colors" title="Editar"><Edit2 className="w-4 h-4" /></button>
+                          <button onClick={() => handleDelete(product.id)} className="p-2 text-tertiary hover:text-error transition-colors" title="Eliminar"><Trash2 className="w-4 h-4" /></button>
+                        </td>
+                      </tr>
+                    );
+                  })}
+                </tbody>
+              </table>
             </div>
-          </>
+          </div>
         )}
 
         {activeTab === 'RAW' && (
@@ -348,11 +350,15 @@ export function ProductCatalog({
         <RawMaterialModal 
           editingItem={editingRawMaterial || undefined}
           onClose={() => { setShowRawMaterialModal(false); setEditingRawMaterial(null); }}
-          onSave={(rm) => {
+          onSave={async (rm) => {
+            const api = await import('../lib/api');
             if (editingRawMaterial) {
+              await api.updateRawMaterial({ ...rm, id: editingRawMaterial.id });
               setRawMaterials(rawMaterials.map(r => r.id === editingRawMaterial.id ? { ...rm, id: r.id } : r));
             } else {
-              setRawMaterials([...rawMaterials, { ...rm, id: Date.now() }]);
+              const newRm = await api.createRawMaterial(rm as any);
+              if (newRm) setRawMaterials([...rawMaterials, newRm]);
+              else setRawMaterials([...rawMaterials, { ...rm, id: Date.now() }]);
             }
             setShowRawMaterialModal(false);
             setEditingRawMaterial(null);
@@ -367,11 +373,37 @@ export function ProductCatalog({
           products={products}
           rawMaterials={rawMaterials}
           onClose={() => { setShowMovementModal(false); setEditingMovement(null); }}
-          onSave={(mov) => {
+          onSave={async (mov) => {
+            const api = await import('../lib/api');
             if (editingMovement) {
+              const dbMov = {
+                id: editingMovement.id,
+                itemId: mov.productId.toString(),
+                itemType: mov.itemType === 'FINISHED' ? 'product' : 'raw_material',
+                type: mov.type === 'STOCK_IN' ? 'in' : 'out',
+                quantity: mov.quantity,
+                date: mov.date,
+                reason: mov.type,
+                notes: mov.notes,
+                referenceId: mov.reference
+              };
+              await api.updateMovement(dbMov as any);
               setMovements(movements.map(m => m.id === editingMovement.id ? { ...mov, id: m.id } : m));
             } else {
-              setMovements([...movements, { ...mov, id: Date.now().toString() }]);
+              const id = Date.now().toString();
+              const dbMov = {
+                id,
+                itemId: mov.productId.toString(),
+                itemType: mov.itemType === 'FINISHED' ? 'product' : 'raw_material',
+                type: mov.type === 'STOCK_IN' ? 'in' : 'out',
+                quantity: mov.quantity,
+                date: mov.date,
+                reason: mov.type,
+                notes: mov.notes,
+                referenceId: mov.reference
+              };
+              await api.createMovementsBatch([dbMov as any]);
+              setMovements([...movements, { ...mov, id }]);
             }
             setShowMovementModal(false);
             setEditingMovement(null);

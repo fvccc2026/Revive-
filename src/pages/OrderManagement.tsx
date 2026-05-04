@@ -59,25 +59,32 @@ export function OrderManagement({ products = [], orders, setOrders, movements, s
     setOrderItems(orderItems.filter(i => i.product.id !== productId));
   };
 
-  const handleSaveOrder = (e: React.FormEvent) => {
+  const handleSaveOrder = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!buyerName || !buyerPhone || !buyerAddress || orderItems.length === 0) {
       alert("Por favor, completa todos los datos del comprador y añade al menos un producto.");
       return;
     }
     
+    const api = await import('../lib/api');
+
     if (editingOrderId) {
-      setOrders(orders.map(o => o.id === editingOrderId ? {
-        ...o,
-        buyer: { name: buyerName, phone: buyerPhone, address: buyerAddress },
-        items: orderItems,
-        subtotal,
-        deliveryFee,
-        total,
-        paymentMethod,
-        paymentDate,
-        transactionReference
-      } : o));
+      const orderToUpdate = orders.find(o => o.id === editingOrderId);
+      if (orderToUpdate) {
+        const updatedOrder = {
+          ...orderToUpdate,
+          buyer: { name: buyerName, phone: buyerPhone, address: buyerAddress },
+          items: orderItems,
+          subtotal,
+          deliveryFee,
+          total,
+          paymentMethod,
+          paymentDate,
+          transactionReference
+        };
+        await api.updateOrder(updatedOrder);
+        setOrders(orders.map(o => o.id === editingOrderId ? updatedOrder : o));
+      }
     } else {
       const newOrder: Order = {
         id: `ORD-${Math.floor(1000 + Math.random() * 9000)}`,
@@ -92,7 +99,13 @@ export function OrderManagement({ products = [], orders, setOrders, movements, s
         paymentDate,
         transactionReference
       };
-      setOrders([newOrder, ...orders]);
+      
+      const createdOrder = await api.createOrder(newOrder);
+      if (createdOrder) {
+        setOrders([createdOrder, ...orders]);
+      } else {
+        setOrders([newOrder, ...orders]);
+      }
       
       // Generate inventory movements for sales
       const newMovements: InventoryMovement[] = orderItems.map(item => ({
@@ -105,6 +118,18 @@ export function OrderManagement({ products = [], orders, setOrders, movements, s
         reference: newOrder.id,
         notes: `Venta automática pedido ${newOrder.id}`
       }));
+      // Map to db column names for Supabase
+      const dbMovements = newMovements.map(m => ({
+        id: m.id,
+        itemId: m.productId.toString(),
+        itemType: 'product',
+        type: 'out',
+        quantity: m.quantity,
+        date: m.date,
+        reason: 'Sale',
+        referenceId: m.reference
+      }));
+      await api.createMovementsBatch(dbMovements as any);
       setMovements([...movements, ...newMovements]);
     }
     
@@ -135,8 +160,10 @@ export function OrderManagement({ products = [], orders, setOrders, movements, s
     setDrawerOpen(true);
   };
 
-  const handleDeleteOrder = (id: string) => {
+  const handleDeleteOrder = async (id: string) => {
     if (window.confirm('¿Estás seguro de que deseas eliminar este pedido?')) {
+      const api = await import('../lib/api');
+      await api.deleteOrder(id);
       setOrders(orders.filter(o => o.id !== id));
     }
   };
